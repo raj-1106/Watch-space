@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Film } from "lucide-react";
 
@@ -9,6 +9,8 @@ type Mode = "login" | "register";
 export function LoginPage() {
   const { login, register, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const next = new URLSearchParams(location.search).get("next") || "/spaces";
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -18,8 +20,8 @@ export function LoginPage() {
 
   // If already logged in, redirect immediately
   React.useEffect(() => {
-    if (user) navigate("/spaces", { replace: true });
-  }, [user, navigate]);
+    if (user) navigate(next, { replace: true });
+  }, [user, navigate, next]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +33,7 @@ export function LoginPage() {
       } else {
         await register(email, password, displayName);
       }
-      navigate("/spaces", { replace: true });
+      navigate(next, { replace: true });
     } catch (err: any) {
       setError(err.message || "Something went wrong");
     } finally {
