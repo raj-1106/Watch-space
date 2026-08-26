@@ -1,0 +1,49 @@
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --duration-instant: 100ms;
+    --duration-fast:    150ms;
+    --duration-base:    250ms;
+    --duration-slow:    400ms;
+    --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-decel:    cubic-bezier(0, 0, 0.2, 1);
+    --ease-accel:    cubic-bezier(0.4, 0, 1, 1);
+  }
+
+  html { @apply bg-midnight text-cream; }
+  body { @apply font-body antialiased; }
+
+  /* Reduced motion — catches CSS transitions; Framer Motion needs useReducedMotion() */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer utilities {
+  /* Edge-fade scroll affordance for horizontal pill rows */
+  .scroll-fade-right {
+    mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  }
+
+  /* Hide scrollbar while keeping scroll functionality */
+  .hide-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Notched device safe area for sticky navbar */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+}

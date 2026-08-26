@@ -1,0 +1,135 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  passwordHash    String?
+  displayName     String
+  avatarUrl       String?
+  preferredLocale String   @default("en")
+  createdAt       DateTime @default(now())
+
+  oauthAccounts OAuthAccount[]
+  memberships   SpaceMembership[]
+  interactions  MediaInteraction[]
+}
+
+model OAuthAccount {
+  id                String @id @default(cuid())
+  userId            String
+  provider          String
+  providerAccountId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Space {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  ownerId   String
+  createdAt DateTime @default(now())
+
+  memberships  SpaceMembership[]
+  invitations  SpaceInvitation[]
+  mediaLinks   SpaceMediaItem[]
+  interactions MediaInteraction[]
+}
+
+enum SpaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model SpaceMembership {
+  id       String    @id @default(cuid())
+  spaceId  String
+  userId   String
+  role     SpaceRole @default(MEMBER)
+  joinedAt DateTime  @default(now())
+
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([spaceId, userId])
+}
+
+model SpaceInvitation {
+  id         String    @id @default(cuid())
+  spaceId    String
+  email      String
+  token      String    @unique @default(cuid())
+  invitedBy  String
+  expiresAt  DateTime
+  acceptedAt DateTime?
+
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+}
+
+enum MediaType {
+  MOVIE
+  SERIES
+  ANIME
+}
+
+model MediaItem {
+  id               String    @id @default(cuid())
+  title            String
+  mediaType        MediaType
+  originalLanguage String    @default("en")
+  releaseYear      Int?
+  posterUrl        String?
+  externalId       String?
+  overview         String?
+  createdAt        DateTime  @default(now())
+
+  spaceLinks   SpaceMediaItem[]
+  interactions MediaInteraction[]
+
+  @@unique([externalId, mediaType])
+}
+
+model SpaceMediaItem {
+  id          String   @id @default(cuid())
+  spaceId     String
+  mediaItemId String
+  addedBy     String
+  addedAt     DateTime @default(now())
+  remarks     String?
+
+  space     Space     @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  mediaItem MediaItem @relation(fields: [mediaItemId], references: [id])
+
+  @@unique([spaceId, mediaItemId])
+}
+
+model MediaInteraction {
+  id          String    @id @default(cuid())
+  userId      String
+  mediaItemId String
+  spaceId     String
+
+  watched    Boolean   @default(false)
+  watchedAt  DateTime?
+  score      Int? // 1–10, optional
+  reviewText String?
+
+  updatedAt DateTime @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mediaItem MediaItem @relation(fields: [mediaItemId], references: [id])
+  space     Space     @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, mediaItemId, spaceId])
+}
