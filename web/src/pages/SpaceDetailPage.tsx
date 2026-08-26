@@ -8,6 +8,13 @@ import { FilmGrid } from "../components/FilmGrid";
 import { AddFilmModal } from "../components/AddFilmModal";
 import type { MediaItem, SpaceMember, MediaFilters } from "../types";
 import { motion } from "framer-motion";
+import { Users } from "lucide-react";
+
+const ROLE_BADGE: Record<string, string> = {
+  OWNER: "bg-gold/20 text-gold border-gold/30",
+  ADMIN: "bg-blue-500/20 text-blue-300 border-blue-400/30",
+  MEMBER: "bg-white/5 text-smoke border-white/10",
+};
 
 export function SpaceDetailPage() {
   const { spaceId } = useParams<{ spaceId: string }>();
@@ -36,6 +43,32 @@ export function SpaceDetailPage() {
   return (
     <div className="min-h-screen bg-midnight font-body">
       <Navbar currentSpaceId={spaceId} onAddClick={() => setModalOpen(true)} />
+
+      {/* ── Members strip ── */}
+      <div className="border-b border-white/5 bg-velvet/40">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1.5 text-smoke text-xs font-mono mr-1">
+            <Users className="w-3.5 h-3.5" />
+            <span>{members.length} member{members.length !== 1 ? "s" : ""}</span>
+          </div>
+          {members.map((m) => (
+            <motion.div
+              key={m.userId ?? (m.user as any)?.id}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex items-center gap-1.5 bg-midnight/60 rounded-full px-3 py-1 border border-white/5"
+            >
+              <div className="w-5 h-5 rounded-full bg-gold/20 flex items-center justify-center text-gold text-[10px] font-bold">
+                {((m.user as any)?.displayName ?? "?")[0].toUpperCase()}
+              </div>
+              <span className="text-cream text-xs">{(m.user as any)?.displayName ?? "Unknown"}</span>
+              <span className={`text-[9px] font-mono border rounded-full px-1.5 py-0.5 ${ROLE_BADGE[m.role] ?? ROLE_BADGE.MEMBER}`}>
+                {m.role}
+              </span>
+            </motion.div>
+          ))}
+        </div>
+      </div>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         <FilterBar filters={filters} setFilters={setFilters} />
