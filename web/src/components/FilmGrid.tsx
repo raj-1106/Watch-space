@@ -1,7 +1,8 @@
 import React from "react";
 import { AnimatePresence } from "framer-motion";
 import { FilmStubCard } from "./FilmStubCard";
-import type { MediaItem, SpaceMember } from "../types";
+import type { MediaItem, SpaceMember, SpaceRole } from "../types";
+import { useAuth } from "../context/AuthContext";
 
 interface FilmGridProps {
   items: MediaItem[];
@@ -10,6 +11,9 @@ interface FilmGridProps {
 }
 
 export function FilmGrid({ items, spaceId, members }: FilmGridProps) {
+  const { user } = useAuth();
+  const myRole = members.find((m) => m.user.id === user?.id)?.role ?? "MEMBER";
+
   const memberMap = members.map((m) => ({
     id: m.user.id,
     displayName: m.user.displayName,
@@ -25,6 +29,7 @@ export function FilmGrid({ items, spaceId, members }: FilmGridProps) {
             item={item}
             spaceId={spaceId}
             members={memberMap}
+            myRole={myRole}
           />
         ))}
       </AnimatePresence>

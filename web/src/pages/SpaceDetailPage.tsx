@@ -53,15 +53,15 @@ export function SpaceDetailPage() {
           </div>
           {members.map((m) => (
             <motion.div
-              key={m.userId ?? (m.user as any)?.id}
+              key={m.user.id}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               className="flex items-center gap-1.5 bg-midnight/60 rounded-full px-3 py-1 border border-white/5"
             >
               <div className="w-5 h-5 rounded-full bg-gold/20 flex items-center justify-center text-gold text-[10px] font-bold">
-                {((m.user as any)?.displayName ?? "?")[0].toUpperCase()}
+                {(m.user.displayName ?? "?")[0].toUpperCase()}
               </div>
-              <span className="text-cream text-xs">{(m.user as any)?.displayName ?? "Unknown"}</span>
+              <span className="text-cream text-xs">{m.user.displayName ?? "Unknown"}</span>
               <span className={`text-[9px] font-mono border rounded-full px-1.5 py-0.5 ${ROLE_BADGE[m.role] ?? ROLE_BADGE.MEMBER}`}>
                 {m.role}
               </span>

@@ -3,12 +3,13 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import type { MediaItem } from "../types";
-import { Star } from "lucide-react";
+import { Star, Trash2 } from "lucide-react";
 
 interface FilmStubCardProps {
   item: MediaItem;
   spaceId: string;
   members: { id: string; displayName: string; avatarUrl?: string | null }[];
+  myRole?: "OWNER" | "ADMIN" | "MEMBER";
 }
 
 const getInitials = (name: string) =>
@@ -16,7 +17,7 @@ const getInitials = (name: string) =>
 
 const mediaLabel: Record<string, string> = { MOVIE: "FILM", SERIES: "SERIES", ANIME: "ANIME" };
 
-export function FilmStubCard({ item, spaceId, members }: FilmStubCardProps) {
+export function FilmStubCard({ item, spaceId, members, myRole }: FilmStubCardProps) {
   const reducedMotion = useReducedMotion();
   const qc = useQueryClient();
   const [hoverRating, setHoverRating] = useState<number | null>(null);
@@ -31,6 +32,18 @@ export function FilmStubCard({ item, spaceId, members }: FilmStubCardProps) {
 
   const handleWatched = () => interact.mutate({ watched: !isWatched });
   const handleScore = (score: number) => interact.mutate({ score });
+
+  const deleteMedia = useMutation({
+    mutationFn: () => api.delete(`/spaces/${spaceId}/media/${item.id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["space-media", spaceId] }),
+  });
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm(`Are you sure you want to remove "${item.title}" from this space?`)) {
+      deleteMedia.mutate();
+    }
+  };
 
   return (
     <motion.div
@@ -78,6 +91,18 @@ export function FilmStubCard({ item, spaceId, members }: FilmStubCardProps) {
 
       {/* ── Metadata ────────────────────────────────────────── */}
       <div className="flex-1 min-w-0 flex flex-col p-3 sm:p-4 gap-2 relative overflow-hidden">
+        
+        {/* Delete Button (Admins only) */}
+        {(myRole === "OWNER" || myRole === "ADMIN") && (
+          <button
+            onClick={handleDelete}
+            disabled={deleteMedia.isPending}
+            className="absolute top-2 right-2 p-1.5 text-smoke/40 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors outline-none focus-visible:ring-2 focus-visible:ring-red-500 z-30 disabled:opacity-50"
+            title="Remove from space"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
 
         {/* WATCHED stamp */}
         <AnimatePresence>
