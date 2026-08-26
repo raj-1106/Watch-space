@@ -15,10 +15,11 @@ const signRefresh = (uid: string): string =>
   jwt.sign({ uid }, process.env.JWT_REFRESH_SECRET!, { expiresIn: "7d" });
 
 const setRefreshCookie = (res: Response, token: string, remember: boolean): void => {
+  const isProd = process.env.NODE_ENV === "production";
   res.cookie("refresh_token", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax",
     ...(remember ? { maxAge: 30 * 24 * 60 * 60 * 1000 } : {}), // 30 days or session
   });
 };
