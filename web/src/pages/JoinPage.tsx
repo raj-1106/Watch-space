@@ -6,12 +6,14 @@ import { useAuth } from "../context/AuthContext";
 
 export function JoinPage() {
   const { token } = useParams<{ token: string }>();
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const navigate = useNavigate();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("");
 
   useEffect(() => {
+    if (isLoading) return; // wait for session to resolve from cookie
+
     if (!user) {
       navigate(`/login?next=/join/${token}`);
       return;
@@ -26,7 +28,7 @@ export function JoinPage() {
         setStatus("error");
         setMessage(err.message);
       });
-  }, [token, user, navigate]);
+  }, [token, user, navigate, isLoading]);
 
   return (
     <div className="min-h-screen bg-midnight flex items-center justify-center p-4 font-body">
