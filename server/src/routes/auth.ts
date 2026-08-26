@@ -14,12 +14,12 @@ const signAccess = (uid: string, email: string): string =>
 const signRefresh = (uid: string): string =>
   jwt.sign({ uid }, process.env.JWT_REFRESH_SECRET!, { expiresIn: "7d" });
 
-const setRefreshCookie = (res: Response, token: string): void => {
+const setRefreshCookie = (res: Response, token: string, remember: boolean): void => {
   res.cookie("refresh_token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    ...(remember ? { maxAge: 30 * 24 * 60 * 60 * 1000 } : {}), // 30 days or session
   });
 };
 
@@ -41,7 +41,7 @@ router.post("/register", async (req, res: Response, next: NextFunction) => {
     });
 
     const accessToken = signAccess(user.id, user.email);
-    setRefreshCookie(res, signRefresh(user.id));
+    setRefreshCookie(res, signRefresh(user.id), true); // always remember on register
 
     res.status(201).json({ accessToken, user });
   } catch (err) {
@@ -52,7 +52,7 @@ router.post("/register", async (req, res: Response, next: NextFunction) => {
 // ─── POST /auth/login ────────────────────────────────────────────────────────
 router.post("/login", async (req, res: Response, next: NextFunction) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, rememberMe = false } = req.body;
     if (!email || !password) throw new AppError(400, "email and password are required.");
 
     const user = await prisma.user.findUnique({ where: { email } });
@@ -62,7 +62,7 @@ router.post("/login", async (req, res: Response, next: NextFunction) => {
     if (!valid) throw new AppError(401, "Invalid credentials.");
 
     const accessToken = signAccess(user.id, user.email);
-    setRefreshCookie(res, signRefresh(user.id));
+    setRefreshCookie(res, signRefresh(user.id), Boolean(rememberMe));
 
     res.json({
       accessToken,

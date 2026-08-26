@@ -17,6 +17,7 @@ export function LoginPage() {
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   // If already logged in, redirect immediately
   React.useEffect(() => {
@@ -29,7 +30,7 @@ export function LoginPage() {
     setLoading(true);
     try {
       if (mode === "login") {
-        await login(email, password);
+        await login(email, password, rememberMe);
       } else {
         await register(email, password, displayName);
       }
@@ -125,6 +126,28 @@ export function LoginPage() {
               <p className="text-stub text-sm bg-stub/10 border border-stub/20 rounded-lg px-4 py-2">
                 {error}
               </p>
+            )}
+
+            {mode === "login" && (
+              <label className="flex items-center gap-3 cursor-pointer select-none group">
+                <div
+                  onClick={() => setRememberMe(v => !v)}
+                  className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-150 ${
+                    rememberMe
+                      ? "bg-gold border-gold"
+                      : "border-white/20 bg-midnight group-hover:border-gold/50"
+                  }`}
+                >
+                  {rememberMe && (
+                    <svg className="w-3 h-3 text-midnight" viewBox="0 0 12 12" fill="none">
+                      <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
+                </div>
+                <span className="text-sm text-smoke group-hover:text-cream transition-colors">
+                  Remember me for 30 days
+                </span>
+              </label>
             )}
 
             <button

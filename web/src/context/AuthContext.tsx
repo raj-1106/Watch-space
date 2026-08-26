@@ -3,7 +3,7 @@ import type { User, AuthState } from "../types";
 import { api, tokenStore } from "../lib/api";
 
 interface AuthContextValue extends AuthState {
-  login:    (email: string, password: string) => Promise<void>;
+  login:    (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   register: (email: string, password: string, displayName: string) => Promise<void>;
   logout:   () => Promise<void>;
   isLoading: boolean;
@@ -29,8 +29,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .finally(() => setIsLoading(false));
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const res = await api.post<{ accessToken: string; user: User }>("/auth/login", { email, password });
+  const login = useCallback(async (email: string, password: string, rememberMe = false) => {
+    const res = await api.post<{ accessToken: string; user: User }>("/auth/login", { email, password, rememberMe });
     tokenStore.set(res.accessToken);
     setAccessToken(res.accessToken);
     setUser(res.user);
