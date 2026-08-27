@@ -136,20 +136,18 @@ export function FilmStubCard({ item, spaceId, members, myRole, index }: FilmStub
       {/* ── Metadata ────────────────────────────────────────── */}
       <div className="hidden sm:flex flex-1 min-w-0 flex-col p-3 sm:p-4 gap-2 relative overflow-hidden">
         
-        {/* Delete Button (Admins only) */}
-        {(myRole === "OWNER" || myRole === "ADMIN") && (
-          <button
-            onClick={handleDelete}
-            onBlur={() => setConfirmingDelete(false)}
-            disabled={deleteMedia.isPending}
-            className={`absolute top-2 right-2 p-1.5 rounded-lg transition-colors outline-none focus-visible:ring-2 focus-visible:ring-red-500 z-30 disabled:opacity-50 ${
-              confirmingDelete ? "text-red-400 bg-red-500/15" : "text-smoke/40 hover:text-red-400 hover:bg-red-500/10"
-            }`}
-            title={confirmingDelete ? "Click again to confirm" : "Remove from space"}
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        )}
+        {/* Delete Button */}
+        <button
+          onClick={handleDelete}
+          onBlur={() => setConfirmingDelete(false)}
+          disabled={deleteMedia.isPending}
+          className={`absolute top-2 right-2 p-1.5 rounded-lg transition-colors outline-none focus-visible:ring-2 focus-visible:ring-red-500 z-30 disabled:opacity-50 ${
+            confirmingDelete ? "text-red-400 bg-red-500/15" : "text-smoke/40 hover:text-red-400 hover:bg-red-500/10"
+          }`}
+          title={confirmingDelete ? "Click again to confirm" : "Remove from space"}
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
 
         {/* WATCHED stamp */}
         <AnimatePresence>
@@ -309,6 +307,21 @@ export function FilmStubCard({ item, spaceId, members, myRole, index }: FilmStub
                 <p className="font-mono text-xs text-smoke mb-3 uppercase tracking-wider text-center">Your Rating</p>
                 <ReelRatingPicker value={currentScore} onChange={handleScore} />
               </div>
+
+              {/* Mobile Delete Button */}
+              <button
+                onClick={handleDelete}
+                onBlur={() => setConfirmingDelete(false)}
+                disabled={deleteMedia.isPending}
+                className={`w-full py-4 rounded-xl flex items-center justify-center gap-2 transition-colors font-mono text-sm tracking-wide outline-none focus-visible:ring-2 focus-visible:ring-red-500 disabled:opacity-50 mt-2 ${
+                  confirmingDelete
+                    ? "bg-red-500 text-white"
+                    : "bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                }`}
+              >
+                <Trash2 className="w-4 h-4" />
+                {confirmingDelete ? "TAP TO CONFIRM" : "REMOVE FROM SPACE"}
+              </button>
             </motion.div>
           </div>
         )}

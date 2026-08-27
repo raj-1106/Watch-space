@@ -227,7 +227,7 @@ router.get("/spaces/:id/media/:mediaItemId", membershipMiddleware(), async (req:
 });
 
 // ─── DELETE /spaces/:id/media/:mediaItemId ────────────────────────────────────
-router.delete("/spaces/:id/media/:mediaItemId", membershipMiddleware("ADMIN"), async (req: Request, res: Response, next: NextFunction) => {
+router.delete("/spaces/:id/media/:mediaItemId", membershipMiddleware(), async (req: Request, res: Response, next: NextFunction) => {
   try {
     await prisma.spaceMediaItem.delete({
       where: { spaceId_mediaItemId: { spaceId: String(req.params.id), mediaItemId: String(req.params.mediaItemId) } },
