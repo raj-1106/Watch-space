@@ -274,11 +274,16 @@ export function FilmStubCard({ item, spaceId, members, myRole, index }: FilmStub
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h2 className="font-display text-2xl text-cream leading-tight">{item.title}</h2>
-                  <div className="flex items-center gap-2 mt-2">
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
                     <span className="text-xs font-mono px-2 py-0.5 rounded-full border border-gold/30 text-gold/80 bg-gold/5">
                       {mediaLabel[item.mediaType]}
                     </span>
                     {item.releaseYear && <span className="font-mono text-xs text-smoke">{item.releaseYear}</span>}
+                    {item.addedBy && members.find(m => m.id === item.addedBy) && (
+                      <span className="font-mono text-[10px] text-smoke/60 uppercase ml-1">
+                        • Added by {members.find(m => m.id === item.addedBy)?.displayName.split(" ")[0]}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <button onClick={() => setMobileModalOpen(false)} className="p-2 text-smoke hover:text-cream bg-white/5 rounded-full shrink-0">
