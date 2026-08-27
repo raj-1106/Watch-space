@@ -200,10 +200,10 @@ export function Navbar({ currentSpaceId, onAddClick }: NavbarProps) {
             {activeSpace && onAddClick && (
               <button
                 onClick={onAddClick}
-                className="flex items-center gap-2 bg-gold/10 hover:bg-gold text-gold hover:text-midnight px-3 sm:px-4 py-2 rounded-full transition-colors group text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-gold"
+                className="hidden sm:flex items-center gap-2 bg-gold/10 hover:bg-gold text-gold hover:text-midnight px-4 py-2 rounded-full transition-colors group text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-gold"
               >
                 <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">Add Title</span>
+                <span>Add Title</span>
               </button>
             )}
 
@@ -217,6 +217,17 @@ export function Navbar({ currentSpaceId, onAddClick }: NavbarProps) {
           </div>
         </div>
       </nav>
+
+      {/* Mobile Floating Action Button (FAB) */}
+      {activeSpace && onAddClick && (
+        <button
+          onClick={onAddClick}
+          className="fixed bottom-6 right-6 w-14 h-14 bg-gold rounded-2xl flex items-center justify-center shadow-[0_4px_20px_rgba(232,178,61,0.4)] text-midnight z-50 sm:hidden outline-none focus-visible:ring-2 focus-visible:ring-gold transition-transform active:scale-95"
+          title="Add Title"
+        >
+          <Plus className="w-8 h-8" />
+        </button>
+      )}
 
       <AnimatePresence>
         {inviteOpen && currentSpaceId && (

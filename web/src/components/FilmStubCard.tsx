@@ -3,7 +3,7 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import type { MediaItem } from "../types";
-import { Star, Trash2 } from "lucide-react";
+import { Star, Trash2, X } from "lucide-react";
 
 interface FilmStubCardProps {
   item: MediaItem;
@@ -21,6 +21,7 @@ export function FilmStubCard({ item, spaceId, members, myRole }: FilmStubCardPro
   const reducedMotion = useReducedMotion();
   const qc = useQueryClient();
   const [hoverRating, setHoverRating] = useState<number | null>(null);
+  const [mobileModalOpen, setMobileModalOpen] = useState(false);
   const currentScore = item.myInteraction?.score ?? 0;
   const isWatched = item.myInteraction?.watched ?? false;
 
@@ -46,14 +47,18 @@ export function FilmStubCard({ item, spaceId, members, myRole }: FilmStubCardPro
   };
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: reducedMotion ? 0 : 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: reducedMotion ? 1 : 0.96 }}
-      transition={{ duration: 0.2, ease: [0, 0, 0.2, 1] }}
-      whileHover={reducedMotion ? undefined : { y: -3, transition: { duration: 0.15 } }}
-      className={`relative flex rounded-xl overflow-hidden border transition-colors duration-200 group
+    <>
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: reducedMotion ? 0 : 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, scale: reducedMotion ? 1 : 0.96 }}
+        transition={{ duration: 0.2, ease: [0, 0, 0.2, 1] }}
+        whileHover={reducedMotion ? undefined : { y: -3, transition: { duration: 0.15 } }}
+        onClick={() => {
+          if (window.innerWidth < 640) setMobileModalOpen(true);
+        }}
+        className={`relative flex flex-col sm:flex-row rounded-xl overflow-hidden border transition-colors duration-200 group cursor-pointer sm:cursor-default
         ${isWatched
           ? "border-gold/50 shadow-[0_0_20px_rgba(232,178,61,0.12)]"
           : "border-white/5 hover:border-gold/25 hover:shadow-[0_0_16px_rgba(232,178,61,0.07)]"
@@ -62,7 +67,7 @@ export function FilmStubCard({ item, spaceId, members, myRole }: FilmStubCardPro
       style={{ minHeight: "160px" }}
     >
       {/* ── Poster ─────────────────────────────────────────── */}
-      <div className="relative w-[100px] sm:w-[110px] flex-shrink-0 overflow-hidden bg-midnight">
+      <div className="relative w-full aspect-[2/3] sm:aspect-auto sm:w-[110px] sm:h-auto flex-shrink-0 overflow-hidden bg-midnight">
         {item.posterUrl ? (
           <img
             src={item.posterUrl}
@@ -76,21 +81,19 @@ export function FilmStubCard({ item, spaceId, members, myRole }: FilmStubCardPro
           </div>
         )}
         {/* Gradient fade into card */}
-        <div className="absolute inset-y-0 right-0 w-6 bg-gradient-to-r from-transparent to-velvet pointer-events-none" />
+        <div className="absolute inset-x-0 sm:inset-x-auto bottom-0 sm:inset-y-0 right-0 h-6 sm:h-full w-full sm:w-6 bg-gradient-to-t sm:bg-gradient-to-r from-transparent to-velvet pointer-events-none" />
       </div>
 
       {/* ── Perforated divider ──────────────────────────────── */}
-      <div className="relative flex-shrink-0 flex flex-col items-center justify-center w-5 select-none z-10">
-        {/* Top notch */}
-        <div className="absolute -top-3 w-6 h-6 rounded-full bg-midnight" />
-        {/* Dashed line */}
-        <div className="flex-1 border-l-2 border-dashed border-white/10 mt-3 mb-3" />
-        {/* Bottom notch */}
-        <div className="absolute -bottom-3 w-6 h-6 rounded-full bg-midnight" />
+      <div className="hidden sm:flex relative flex-shrink-0 flex-row sm:flex-col items-center justify-center h-5 w-full sm:h-auto sm:w-5 select-none z-10">
+        {/* Notches */}
+        <div className="absolute -left-3 sm:left-1/2 top-1/2 sm:-top-3 -translate-y-1/2 sm:translate-y-0 sm:-translate-x-1/2 w-6 h-6 rounded-full bg-midnight" />
+        <div className="flex-1 border-t-2 sm:border-t-0 sm:border-l-2 border-dashed border-white/10 mx-3 sm:mx-0 sm:my-3" />
+        <div className="absolute -right-3 sm:right-auto sm:left-1/2 top-1/2 sm:top-auto sm:-bottom-3 -translate-y-1/2 sm:translate-y-0 sm:-translate-x-1/2 w-6 h-6 rounded-full bg-midnight" />
       </div>
 
       {/* ── Metadata ────────────────────────────────────────── */}
-      <div className="flex-1 min-w-0 flex flex-col p-3 sm:p-4 gap-2 relative overflow-hidden">
+      <div className="hidden sm:flex flex-1 min-w-0 flex-col p-3 sm:p-4 gap-2 relative overflow-hidden">
         
         {/* Delete Button (Admins only) */}
         {(myRole === "OWNER" || myRole === "ADMIN") && (
@@ -212,5 +215,74 @@ export function FilmStubCard({ item, spaceId, members, myRole }: FilmStubCardPro
         </div>
       </div>
     </motion.div>
+
+      {/* ── Mobile Interaction Modal ─────────────────────────── */}
+      <AnimatePresence>
+        {mobileModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-end sm:hidden bg-midnight/80 backdrop-blur-sm" onClick={() => setMobileModalOpen(false)}>
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full bg-velvet border-t border-white/10 rounded-t-3xl p-6 shadow-2xl flex flex-col gap-6"
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="font-display text-2xl text-cream leading-tight">{item.title}</h2>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-xs font-mono px-2 py-0.5 rounded-full border border-gold/30 text-gold/80 bg-gold/5">
+                      {mediaLabel[item.mediaType]}
+                    </span>
+                    {item.releaseYear && <span className="font-mono text-xs text-smoke">{item.releaseYear}</span>}
+                  </div>
+                </div>
+                <button onClick={() => setMobileModalOpen(false)} className="p-2 text-smoke hover:text-cream bg-white/5 rounded-full shrink-0">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Watched Toggle */}
+              <button
+                onClick={handleWatched}
+                disabled={interact.isPending}
+                className={`w-full py-4 rounded-xl flex items-center justify-center gap-3 transition-colors font-display text-lg tracking-wide ${
+                  isWatched
+                    ? "bg-gold text-midnight"
+                    : "bg-white/5 text-cream border border-white/10 hover:border-gold/30"
+                }`}
+              >
+                <svg className="w-6 h-6" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                {isWatched ? "WATCHED" : "MARK WATCHED"}
+              </button>
+
+              {/* Rating Selector */}
+              <div>
+                <p className="font-mono text-xs text-smoke mb-3 uppercase tracking-wider text-center">Your Rating</p>
+                <div className="flex justify-between gap-1">
+                  {[1,2,3,4,5,6,7,8,9,10].map((n) => (
+                    <button
+                      key={n}
+                      onClick={() => handleScore(n)}
+                      className={`flex-1 h-12 rounded-lg font-mono font-medium transition-all ${
+                        n <= currentScore
+                          ? "bg-gold text-midnight"
+                          : "bg-white/5 text-smoke hover:bg-gold/20"
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
