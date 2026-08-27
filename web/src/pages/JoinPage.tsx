@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
@@ -8,6 +9,7 @@ export function JoinPage() {
   const { token } = useParams<{ token: string }>();
   const { user, isLoading } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("");
 
@@ -21,6 +23,7 @@ export function JoinPage() {
 
     api.post<{ spaceId: string }>(`/spaces/invitations/${token}/accept`, {})
       .then(({ spaceId }) => {
+        queryClient.invalidateQueries({ queryKey: ["spaces"] });
         setStatus("success");
         setTimeout(() => navigate(`/spaces/${spaceId}`), 1500);
       })
@@ -28,7 +31,7 @@ export function JoinPage() {
         setStatus("error");
         setMessage(err.message);
       });
-  }, [token, user, navigate, isLoading]);
+  }, [token, user, navigate, isLoading, queryClient]);
 
   return (
     <div className="min-h-screen bg-midnight flex items-center justify-center p-4 font-body">

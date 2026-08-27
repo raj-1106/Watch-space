@@ -128,7 +128,14 @@ router.post("/invitations/:token/accept", async (req: Request, res: Response, ne
     if (!invitation || invitation.expiresAt < new Date()) {
       throw new AppError(400, "Invitation invalid or expired.");
     }
-    if (invitation.acceptedAt) throw new AppError(400, "Invitation already used.");
+
+    const existingMembership = await prisma.spaceMembership.findUnique({
+      where: { spaceId_userId: { spaceId: invitation.spaceId, userId: req.user!.uid } },
+    });
+
+    if (invitation.acceptedAt && !existingMembership) {
+      throw new AppError(400, "Invitation already used.");
+    }
 
     await prisma.spaceMembership.upsert({
       where: { spaceId_userId: { spaceId: invitation.spaceId, userId: req.user!.uid } },
@@ -136,10 +143,12 @@ router.post("/invitations/:token/accept", async (req: Request, res: Response, ne
       update: {},
     });
 
-    await prisma.spaceInvitation.update({
-      where: { token },
-      data: { acceptedAt: new Date() },
-    });
+    if (!invitation.acceptedAt) {
+      await prisma.spaceInvitation.update({
+        where: { token },
+        data: { acceptedAt: new Date() },
+      });
+    }
 
     res.json({ spaceId: invitation.spaceId });
   } catch (err) {
