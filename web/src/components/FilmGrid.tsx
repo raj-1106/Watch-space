@@ -23,13 +23,14 @@ export function FilmGrid({ items, spaceId, members }: FilmGridProps) {
   return (
     <div className="block columns-2 sm:columns-auto sm:flex sm:flex-col gap-2 sm:gap-3 pb-24">
       <AnimatePresence mode="popLayout">
-        {items.map((item) => (
+        {items.map((item, index) => (
           <div key={item.id} className="break-inside-avoid mb-2 sm:mb-0">
             <FilmStubCard
               item={item}
               spaceId={spaceId}
               members={memberMap}
               myRole={myRole}
+              index={index}
             />
           </div>
         ))}

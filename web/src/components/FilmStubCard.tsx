@@ -4,12 +4,14 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import type { MediaItem } from "../types";
 import { Star, Trash2, X } from "lucide-react";
+import { ReelRatingPicker } from "./ReelRatingPicker";
 
 interface FilmStubCardProps {
   item: MediaItem;
   spaceId: string;
   members: { id: string; displayName: string; avatarUrl?: string | null }[];
   myRole?: "OWNER" | "ADMIN" | "MEMBER";
+  index?: number;
 }
 
 const getInitials = (name: string) =>
@@ -17,18 +19,34 @@ const getInitials = (name: string) =>
 
 const mediaLabel: Record<string, string> = { MOVIE: "FILM", SERIES: "SERIES", ANIME: "ANIME" };
 
-export function FilmStubCard({ item, spaceId, members, myRole }: FilmStubCardProps) {
+export function FilmStubCard({ item, spaceId, members, myRole, index }: FilmStubCardProps) {
   const reducedMotion = useReducedMotion();
   const qc = useQueryClient();
   const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [mobileModalOpen, setMobileModalOpen] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const currentScore = item.myInteraction?.score ?? 0;
   const isWatched = item.myInteraction?.watched ?? false;
 
   const interact = useMutation({
     mutationFn: (data: { watched?: boolean; score?: number }) =>
       api.put(`/spaces/${spaceId}/media/${item.id}/interaction`, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["space-media", spaceId] }),
+    onMutate: async (data) => {
+      await qc.cancelQueries({ queryKey: ["space-media", spaceId] });
+      const previous = qc.getQueryData<MediaItem[]>(["space-media", spaceId]);
+      qc.setQueryData<MediaItem[]>(["space-media", spaceId], (old) =>
+        old?.map((m) =>
+          m.id === item.id
+            ? { ...m, myInteraction: { ...m.myInteraction, watched: m.myInteraction?.watched ?? false, ...data } }
+            : m
+        )
+      );
+      return { previous };
+    },
+    onError: (_err, _data, context) => {
+      if (context?.previous) qc.setQueryData(["space-media", spaceId], context.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["space-media", spaceId] }),
   });
 
   const handleWatched = () => interact.mutate({ watched: !isWatched });
@@ -41,9 +59,11 @@ export function FilmStubCard({ item, spaceId, members, myRole }: FilmStubCardPro
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm(`Are you sure you want to remove "${item.title}" from this space?`)) {
-      deleteMedia.mutate();
+    if (!confirmingDelete) {
+      setConfirmingDelete(true);
+      return;
     }
+    deleteMedia.mutate();
   };
 
   return (
@@ -53,7 +73,7 @@ export function FilmStubCard({ item, spaceId, members, myRole }: FilmStubCardPro
         initial={{ opacity: 0, y: reducedMotion ? 0 : 16 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, scale: reducedMotion ? 1 : 0.96 }}
-        transition={{ duration: 0.2, ease: [0, 0, 0.2, 1] }}
+        transition={{ duration: 0.2, ease: [0, 0, 0.2, 1], delay: reducedMotion ? 0 : Math.min((index ?? 0) * 0.03, 0.3) }}
         whileHover={reducedMotion ? undefined : { y: -3, transition: { duration: 0.15 } }}
         onClick={() => {
           if (window.innerWidth < 640) setMobileModalOpen(true);
@@ -72,14 +92,35 @@ export function FilmStubCard({ item, spaceId, members, myRole }: FilmStubCardPro
           <img
             src={item.posterUrl}
             alt={item.title}
-            className="w-full h-full object-cover"
+            className={`w-full h-full object-cover transition-all duration-300 ${isWatched ? "opacity-75 grayscale-[25%]" : ""}`}
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
+          <div className={`w-full h-full flex items-center justify-center transition-all duration-300 ${isWatched ? "opacity-75 grayscale-[25%]" : ""}`}>
             <span className="font-display text-4xl text-white/10">M</span>
           </div>
         )}
+
+        {/* Mobile-only watched badge — desktop already shows the full stamp in the metadata column */}
+        <AnimatePresence>
+          {isWatched && (
+            <motion.div
+              initial={reducedMotion ? { opacity: 1 } : { opacity: 0, scale: 0.7, rotate: -14 }}
+              animate={{ opacity: 1, scale: 1, rotate: -12 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={reducedMotion ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 22 }}
+              className="sm:hidden absolute top-2 right-1.5 pointer-events-none z-20"
+            >
+              <div className="border-[2px] border-gold rounded px-1.5 py-0.5 rotate-[-12deg]
+                shadow-[0_0_8px_rgba(232,178,61,0.5)] bg-midnight/60 backdrop-blur-[2px]">
+                <span className="font-display text-gold text-[9px] tracking-[0.15em] opacity-90 leading-none">
+                  WATCHED
+                </span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Gradient fade into card */}
         <div className="absolute inset-x-0 sm:inset-x-auto bottom-0 sm:inset-y-0 right-0 h-6 sm:h-full w-full sm:w-6 bg-gradient-to-t sm:bg-gradient-to-r from-transparent to-velvet pointer-events-none" />
       </div>
@@ -99,9 +140,12 @@ export function FilmStubCard({ item, spaceId, members, myRole }: FilmStubCardPro
         {(myRole === "OWNER" || myRole === "ADMIN") && (
           <button
             onClick={handleDelete}
+            onBlur={() => setConfirmingDelete(false)}
             disabled={deleteMedia.isPending}
-            className="absolute top-2 right-2 p-1.5 text-smoke/40 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors outline-none focus-visible:ring-2 focus-visible:ring-red-500 z-30 disabled:opacity-50"
-            title="Remove from space"
+            className={`absolute top-2 right-2 p-1.5 rounded-lg transition-colors outline-none focus-visible:ring-2 focus-visible:ring-red-500 z-30 disabled:opacity-50 ${
+              confirmingDelete ? "text-red-400 bg-red-500/15" : "text-smoke/40 hover:text-red-400 hover:bg-red-500/10"
+            }`}
+            title={confirmingDelete ? "Click again to confirm" : "Remove from space"}
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -115,11 +159,11 @@ export function FilmStubCard({ item, spaceId, members, myRole }: FilmStubCardPro
               animate={{ opacity: 1, scale: 1, rotate: -12 }}
               exit={{ opacity: 0, scale: 0.8 }}
               transition={reducedMotion ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 22 }}
-              className="absolute inset-0 flex items-center justify-center pointer-events-none z-20"
+              className="absolute top-2 right-2 pointer-events-none z-20"
             >
-              <div className="border-[3px] border-gold rounded-md px-3 py-1 rotate-[-12deg]
-                shadow-[0_0_12px_rgba(232,178,61,0.4)] bg-midnight/20 backdrop-blur-[1px]">
-                <span className="font-display text-gold text-xl sm:text-2xl tracking-[0.25em] opacity-90">
+              <div className="border-[2.5px] border-gold rounded-md px-2 py-0.5 rotate-[-12deg]
+                shadow-[0_0_12px_rgba(232,178,61,0.4)] bg-midnight/40 backdrop-blur-[1px]">
+                <span className="font-display text-gold text-sm tracking-[0.2em] opacity-90">
                   WATCHED
                 </span>
               </div>
@@ -263,21 +307,7 @@ export function FilmStubCard({ item, spaceId, members, myRole }: FilmStubCardPro
               {/* Rating Selector */}
               <div>
                 <p className="font-mono text-xs text-smoke mb-3 uppercase tracking-wider text-center">Your Rating</p>
-                <div className="flex justify-between gap-1">
-                  {[1,2,3,4,5,6,7,8,9,10].map((n) => (
-                    <button
-                      key={n}
-                      onClick={() => handleScore(n)}
-                      className={`flex-1 h-12 rounded-lg font-mono font-medium transition-all ${
-                        n <= currentScore
-                          ? "bg-gold text-midnight"
-                          : "bg-white/5 text-smoke hover:bg-gold/20"
-                      }`}
-                    >
-                      {n}
-                    </button>
-                  ))}
-                </div>
+                <ReelRatingPicker value={currentScore} onChange={handleScore} />
               </div>
             </motion.div>
           </div>
