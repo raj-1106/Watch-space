@@ -19,7 +19,7 @@ const setRefreshCookie = (res: Response, token: string, remember: boolean): void
   res.cookie("refresh_token", token, {
     httpOnly: true,
     secure: isProd,
-    sameSite: isProd ? "none" : "lax",
+    sameSite: "lax",
     ...(remember ? { maxAge: 30 * 24 * 60 * 60 * 1000 } : {}), // 30 days or session
   });
 };
