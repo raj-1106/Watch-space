@@ -13,10 +13,19 @@ export function SpaceListPage() {
   const [spaceName, setSpaceName] = useState("");
   const [error, setError] = useState("");
 
-  const { data: spaces = [], isLoading } = useQuery<Space[]>({
+  const { data: spaces = [], isLoading, isError, error: queryError } = useQuery<Space[], Error>({
     queryKey: ["spaces"],
     queryFn: () => api.get("/spaces"),
+    retry: (failureCount, err) => err.message !== "UNAUTHENTICATED" && failureCount < 2,
   });
+
+  // Auto-redirect on unauthenticated
+  React.useEffect(() => {
+    if (isError && queryError?.message === "UNAUTHENTICATED") {
+      const timer = setTimeout(() => window.location.href = `/login?next=${window.location.pathname}`, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isError, queryError]);
 
   const createSpace = useMutation({
     mutationFn: (name: string) => api.post<Space>("/spaces", { name }),
@@ -49,6 +58,13 @@ export function SpaceListPage() {
             {[1, 2].map(i => (
               <div key={i} className="h-20 bg-velvet/50 rounded-xl animate-pulse" />
             ))}
+          </div>
+        ) : isError ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-3 text-center bg-velvet border border-white/5 rounded-xl mb-6">
+            <p className="font-display text-xl text-stub tracking-widest">SOMETHING WENT WRONG</p>
+            <p className="text-smoke/60 text-sm">
+              {queryError?.message === "UNAUTHENTICATED" ? "Your session expired — redirecting to login..." : "Couldn't load your spaces."}
+            </p>
           </div>
         ) : (
           <div className="space-y-3 mb-6">

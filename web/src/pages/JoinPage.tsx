@@ -12,15 +12,17 @@ export function JoinPage() {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("");
+  const hasAttempted = React.useRef(false);
 
   useEffect(() => {
-    if (isLoading) return; // wait for session to resolve from cookie
+    if (isLoading || hasAttempted.current) return; // wait for session to resolve from cookie
 
     if (!user) {
       navigate(`/login?next=/join/${token}`);
       return;
     }
 
+    hasAttempted.current = true;
     api.post<{ spaceId: string }>(`/spaces/invitations/${token}/accept`, {})
       .then(({ spaceId }) => {
         queryClient.invalidateQueries({ queryKey: ["spaces"] });

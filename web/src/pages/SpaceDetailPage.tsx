@@ -32,11 +32,20 @@ export function SpaceDetailPage() {
   if (filters.watched !== undefined) qs.set("watched", filters.watched.toString());
   if (filters.search) qs.set("search", filters.search);
 
-  const { data: media = [], isLoading } = useQuery<MediaItem[]>({
+  const { data: media = [], isLoading, isError, error } = useQuery<MediaItem[], Error>({
     queryKey: ["space-media", spaceId, filters],
     queryFn: () => api.get(`/spaces/${spaceId}/media?${qs.toString()}`),
     enabled: !!spaceId,
+    retry: (failureCount, err) => err.message !== "UNAUTHENTICATED" && failureCount < 2,
   });
+
+  // Auto-redirect on unauthenticated
+  React.useEffect(() => {
+    if (isError && error?.message === "UNAUTHENTICATED") {
+      const timer = setTimeout(() => window.location.href = `/login?next=${window.location.pathname}`, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isError, error]);
 
   if (!spaceId) return null;
 
@@ -84,6 +93,13 @@ export function SpaceDetailPage() {
                 className="h-40 bg-velvet rounded-xl"
               />
             ))}
+          </div>
+        ) : isError ? (
+          <div className="flex flex-col items-center justify-center py-32 gap-3 text-center">
+            <p className="font-display text-2xl text-stub tracking-widest">SOMETHING WENT WRONG</p>
+            <p className="text-smoke/60 text-sm">
+              {error?.message === "UNAUTHENTICATED" ? "Your session expired — redirecting to login..." : "Couldn't load this space."}
+            </p>
           </div>
         ) : media.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-32 gap-4 text-center">
