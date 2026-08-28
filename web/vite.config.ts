@@ -35,7 +35,7 @@ export default defineConfig({
         // not a side effect of adding installability.
         globPatterns: ["**/*.{js,css,html,svg,woff2}"],
       },
-      registerType: "prompt", // NOT autoUpdate — see pwaUpdate.ts for why
+      registerType: "autoUpdate",
       includeAssets: ["favicon.svg", "icons.svg"],
       manifest: {
         name: "Sofa Syndicate",
