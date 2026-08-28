@@ -36,18 +36,24 @@ export function FilmStubCard({ item, spaceId, members, myRole, index }: FilmStub
       api.put(`/spaces/${spaceId}/media/${item.id}/interaction`, data),
     onMutate: async (data) => {
       await qc.cancelQueries({ queryKey: ["space-media", spaceId] });
-      const previous = qc.getQueryData<MediaItem[]>(["space-media", spaceId]);
-      qc.setQueryData<MediaItem[]>(["space-media", spaceId], (old) =>
+      
+      const previousQueries = qc.getQueriesData<MediaItem[]>({ queryKey: ["space-media", spaceId] });
+      
+      qc.setQueriesData<MediaItem[]>({ queryKey: ["space-media", spaceId] }, (old) =>
         old?.map((m) =>
           m.id === item.id
             ? { ...m, myInteraction: { ...m.myInteraction, watched: m.myInteraction?.watched ?? false, ...data } }
             : m
         )
       );
-      return { previous };
+      return { previousQueries };
     },
     onError: (_err, _data, context) => {
-      if (context?.previous) qc.setQueryData(["space-media", spaceId], context.previous);
+      if (context?.previousQueries) {
+        context.previousQueries.forEach(([queryKey, data]) => {
+          qc.setQueryData(queryKey, data);
+        });
+      }
     },
     onSettled: () => qc.invalidateQueries({ queryKey: ["space-media", spaceId] }),
   });
