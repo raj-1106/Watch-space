@@ -20,6 +20,7 @@ model User {
   oauthAccounts OAuthAccount[]
   memberships   SpaceMembership[]
   interactions  MediaInteraction[]
+  comments      Comment[]
 }
 
 model OAuthAccount {
@@ -44,6 +45,7 @@ model Space {
   invitations  SpaceInvitation[]
   mediaLinks   SpaceMediaItem[]
   interactions MediaInteraction[]
+  tags         Tag[]
 }
 
 enum SpaceRole {
@@ -110,6 +112,8 @@ model SpaceMediaItem {
 
   space     Space     @relation(fields: [spaceId], references: [id], onDelete: Cascade)
   mediaItem MediaItem @relation(fields: [mediaItemId], references: [id])
+  comments  Comment[]
+  tags      SpaceMediaItemTag[]
 
   @@unique([spaceId, mediaItemId])
 }
@@ -132,4 +136,39 @@ model MediaInteraction {
   space     Space     @relation(fields: [spaceId], references: [id], onDelete: Cascade)
 
   @@unique([userId, mediaItemId, spaceId])
+}
+
+model Comment {
+  id               String    @id @default(cuid())
+  spaceMediaItemId String
+  userId           String
+  body             String
+  createdAt        DateTime  @default(now())
+  editedAt         DateTime?
+
+  spaceMediaItem SpaceMediaItem @relation(fields: [spaceMediaItemId], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  spaceId   String
+  label     String
+  createdBy String
+  createdAt DateTime @default(now())
+
+  space Space               @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  items SpaceMediaItemTag[]
+
+  @@unique([spaceId, label]) // no duplicate "slow-burn" tags within one space
+}
+
+model SpaceMediaItemTag {
+  spaceMediaItemId String
+  tagId            String
+
+  spaceMediaItem SpaceMediaItem @relation(fields: [spaceMediaItemId], references: [id], onDelete: Cascade)
+  tag            Tag            @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([spaceMediaItemId, tagId])
 }

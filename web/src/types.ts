@@ -50,6 +50,7 @@ export interface MediaItem {
     watched: boolean;
     score?: number | null;
     watchedAt?: string | null;
+    reviewText?: string | null;
   } | null;
   memberInteractions?: {
     userId: string;
@@ -57,7 +58,32 @@ export interface MediaItem {
     avatarUrl?: string | null;
     watched: boolean;
     score?: number | null;
+    reviewText?: string | null;
   }[];
+  tags?: Tag[];
+}
+
+// ─── Comments & Tags ─────────────────────────────────────────────────────────
+export interface Comment {
+  id: string;
+  spaceMediaItemId: string;
+  userId: string;
+  body: string;
+  createdAt: string;
+  editedAt?: string | null;
+  user: {
+    id: string;
+    displayName: string;
+    avatarUrl?: string | null;
+  };
+}
+
+export interface Tag {
+  id: string;
+  spaceId: string;
+  label: string;
+  createdBy: string;
+  createdAt: string;
 }
 
 // ─── TMDb Search ─────────────────────────────────────────────────────────────

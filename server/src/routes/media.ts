@@ -100,7 +100,10 @@ router.get("/catalog/search", async (req: Request, res: Response, next: NextFunc
 async function getEnrichedMedia(spaceId: string, userId: string) {
   const spaceMedia = await prisma.spaceMediaItem.findMany({
     where: { spaceId },
-    include: { mediaItem: true },
+    include: { 
+      mediaItem: true,
+      tags: { include: { tag: true } }
+    },
     orderBy: { addedAt: "desc" },
   });
 
@@ -122,8 +125,9 @@ async function getEnrichedMedia(spaceId: string, userId: string) {
         addedAt: sm.addedAt,
         remarks: sm.remarks,
         avgScore,
+        tags: sm.tags.map(t => t.tag),
         myInteraction: myInteraction
-          ? { watched: myInteraction.watched, score: myInteraction.score, watchedAt: myInteraction.watchedAt }
+          ? { watched: myInteraction.watched, score: myInteraction.score, watchedAt: myInteraction.watchedAt, reviewText: myInteraction.reviewText }
           : null,
         memberInteractions: interactions.map((i) => ({
           userId: i.userId,
@@ -131,6 +135,7 @@ async function getEnrichedMedia(spaceId: string, userId: string) {
           avatarUrl: i.user.avatarUrl,
           watched: i.watched,
           score: i.score,
+          reviewText: i.reviewText,
         })),
       };
     })

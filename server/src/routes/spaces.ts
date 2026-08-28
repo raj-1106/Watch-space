@@ -189,4 +189,159 @@ router.delete("/:id/members/:userId", membershipMiddleware("ADMIN"), async (req:
   }
 });
 
+// ─── GET /spaces/:id/tags ──────────────────────────────────────────────────────
+router.get("/:id/tags", membershipMiddleware(), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tags = await prisma.tag.findMany({
+      where: { spaceId: String(req.params.id) },
+      orderBy: { label: "asc" },
+    });
+    res.json(tags);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── POST /spaces/:id/media/:mediaItemId/tags ────────────────────────────────
+router.post("/:id/media/:mediaItemId/tags", membershipMiddleware(), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const spaceId = String(req.params.id);
+    const mediaItemId = String(req.params.mediaItemId);
+    const label = String(req.body.label).trim().toLowerCase();
+    
+    if (!label || label.length > 30) throw new AppError(400, "Tag must be 1–30 characters.");
+
+    const spaceMediaItem = await prisma.spaceMediaItem.findUnique({
+      where: { spaceId_mediaItemId: { spaceId, mediaItemId } },
+    });
+    if (!spaceMediaItem) throw new AppError(404, "Title not found in this space.");
+
+    const tag = await prisma.tag.upsert({
+      where: { spaceId_label: { spaceId, label } },
+      update: {},
+      create: { spaceId, label, createdBy: req.user!.uid },
+    });
+
+    await prisma.spaceMediaItemTag.upsert({
+      where: { spaceMediaItemId_tagId: { spaceMediaItemId: spaceMediaItem.id, tagId: tag.id } },
+      update: {},
+      create: { spaceMediaItemId: spaceMediaItem.id, tagId: tag.id },
+    });
+
+    res.json(tag);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── DELETE /spaces/:id/media/:mediaItemId/tags/:tagId ───────────────────────
+router.delete("/:id/media/:mediaItemId/tags/:tagId", membershipMiddleware(), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const spaceId = String(req.params.id);
+    const mediaItemId = String(req.params.mediaItemId);
+    const tagId = String(req.params.tagId);
+
+    const spaceMediaItem = await prisma.spaceMediaItem.findUnique({
+      where: { spaceId_mediaItemId: { spaceId, mediaItemId } },
+    });
+    if (!spaceMediaItem) throw new AppError(404, "Title not found in this space.");
+
+    await prisma.spaceMediaItemTag.delete({
+      where: { spaceMediaItemId_tagId: { spaceMediaItemId: spaceMediaItem.id, tagId } },
+    });
+
+    res.json({ message: "Tag removed." });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── GET /spaces/:id/media/:mediaItemId/comments ─────────────────────────────
+router.get("/:id/media/:mediaItemId/comments", membershipMiddleware(), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const spaceId = String(req.params.id);
+    const mediaItemId = String(req.params.mediaItemId);
+
+    const spaceMediaItem = await prisma.spaceMediaItem.findUnique({
+      where: { spaceId_mediaItemId: { spaceId, mediaItemId } },
+    });
+    if (!spaceMediaItem) throw new AppError(404, "Title not found in this space.");
+
+    const comments = await prisma.comment.findMany({
+      where: { spaceMediaItemId: spaceMediaItem.id },
+      include: {
+        user: { select: { id: true, displayName: true, avatarUrl: true } }
+      },
+      orderBy: { createdAt: "asc" },
+    });
+
+    res.json(comments);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── POST /spaces/:id/media/:mediaItemId/comments ────────────────────────────
+router.post("/:id/media/:mediaItemId/comments", membershipMiddleware(), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const spaceId = String(req.params.id);
+    const mediaItemId = String(req.params.mediaItemId);
+    const body = String(req.body.body).trim();
+    if (!body) throw new AppError(400, "Comment body is required.");
+
+    const spaceMediaItem = await prisma.spaceMediaItem.findUnique({
+      where: { spaceId_mediaItemId: { spaceId, mediaItemId } },
+    });
+    if (!spaceMediaItem) throw new AppError(404, "Title not found in this space.");
+
+    const comment = await prisma.comment.create({
+      data: {
+        spaceMediaItemId: spaceMediaItem.id,
+        userId: req.user!.uid,
+        body,
+      },
+      include: {
+        user: { select: { id: true, displayName: true, avatarUrl: true } }
+      }
+    });
+
+    res.status(201).json(comment);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── DELETE /spaces/:id/media/:mediaItemId/comments/:commentId ───────────────
+router.delete("/:id/media/:mediaItemId/comments/:commentId", membershipMiddleware(), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const spaceId = String(req.params.id);
+    const mediaItemId = String(req.params.mediaItemId);
+    const commentId = String(req.params.commentId);
+
+    const spaceMediaItem = await prisma.spaceMediaItem.findUnique({
+      where: { spaceId_mediaItemId: { spaceId, mediaItemId } },
+    });
+    if (!spaceMediaItem) throw new AppError(404, "Title not found in this space.");
+
+    const comment = await prisma.comment.findUnique({ where: { id: commentId } });
+    if (!comment) throw new AppError(404, "Comment not found.");
+
+    // Only author or admin/owner can delete
+    if (comment.userId !== req.user!.uid) {
+       // Check if user is admin/owner
+       const membership = await prisma.spaceMembership.findUnique({
+         where: { spaceId_userId: { spaceId, userId: req.user!.uid } }
+       });
+       if (membership?.role !== "OWNER" && membership?.role !== "ADMIN") {
+         throw new AppError(403, "Not authorized to delete this comment.");
+       }
+    }
+
+    await prisma.comment.delete({ where: { id: commentId } });
+    res.json({ message: "Comment deleted." });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;

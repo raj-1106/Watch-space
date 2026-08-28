@@ -3,8 +3,10 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import type { MediaItem } from "../types";
-import { Star, Trash2, X } from "lucide-react";
+import { Star, Trash2, X, MessageSquare } from "lucide-react";
 import { ReelRatingPicker } from "./ReelRatingPicker";
+import { TagRow } from "./TagRow";
+import { CommentsSection } from "./CommentsSection";
 
 interface FilmStubCardProps {
   item: MediaItem;
@@ -23,7 +25,8 @@ export function FilmStubCard({ item, spaceId, members, myRole, index }: FilmStub
   const reducedMotion = useReducedMotion();
   const qc = useQueryClient();
   const [hoverRating, setHoverRating] = useState<number | null>(null);
-  const [mobileModalOpen, setMobileModalOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const currentScore = item.myInteraction?.score ?? 0;
   const isWatched = item.myInteraction?.watched ?? false;
@@ -76,7 +79,11 @@ export function FilmStubCard({ item, spaceId, members, myRole, index }: FilmStub
         transition={{ duration: 0.2, ease: [0, 0, 0.2, 1], delay: reducedMotion ? 0 : Math.min((index ?? 0) * 0.03, 0.3) }}
         whileHover={reducedMotion ? undefined : { y: -3, transition: { duration: 0.15 } }}
         onClick={() => {
-          if (window.innerWidth < 640) setMobileModalOpen(true);
+          if (window.innerWidth < 640) {
+            setModalOpen(true);
+          } else {
+            setExpanded(e => !e);
+          }
         }}
         className={`relative flex flex-col sm:flex-row rounded-xl overflow-hidden border transition-colors duration-200 group cursor-pointer sm:cursor-default
         ${isWatched
@@ -188,6 +195,7 @@ export function FilmStubCard({ item, spaceId, members, myRole, index }: FilmStub
               </span>
             )}
           </div>
+          <TagRow spaceId={spaceId} mediaItemId={item.id} tags={item.tags || []} />
         </div>
 
         {/* Avg rating */}
@@ -260,20 +268,35 @@ export function FilmStubCard({ item, spaceId, members, myRole, index }: FilmStub
             })}
           </div>
         </div>
+
+        {/* Desktop Expanded View */}
+        <AnimatePresence>
+          {expanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden mt-4 pt-4 border-t border-white/10"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <CommentsSection spaceId={spaceId} item={item} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
 
       {/* ── Mobile Interaction Modal ─────────────────────────── */}
       <AnimatePresence>
-        {mobileModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-end sm:hidden bg-midnight/80 backdrop-blur-sm" onClick={() => setMobileModalOpen(false)}>
+        {modalOpen && (
+          <div className="fixed inset-0 z-50 flex items-end sm:hidden bg-midnight/80 backdrop-blur-sm" onClick={() => setModalOpen(false)}>
             <motion.div
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", bounce: 0, duration: 0.4 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full bg-velvet border-t border-white/10 rounded-t-3xl p-6 shadow-2xl flex flex-col gap-6"
+              className="w-full bg-velvet border-t border-white/10 rounded-t-3xl p-6 shadow-2xl flex flex-col gap-6 max-h-[90vh] overflow-y-auto"
             >
               {/* Header */}
               <div className="flex items-start justify-between gap-4">
@@ -290,8 +313,11 @@ export function FilmStubCard({ item, spaceId, members, myRole, index }: FilmStub
                       </span>
                     )}
                   </div>
+                  <div className="mt-2">
+                    <TagRow spaceId={spaceId} mediaItemId={item.id} tags={item.tags || []} />
+                  </div>
                 </div>
-                <button onClick={() => setMobileModalOpen(false)} className="p-2 text-smoke hover:text-cream bg-white/5 rounded-full shrink-0">
+                <button onClick={() => setModalOpen(false)} className="p-2 text-smoke hover:text-cream bg-white/5 rounded-full shrink-0">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -316,6 +342,11 @@ export function FilmStubCard({ item, spaceId, members, myRole, index }: FilmStub
               <div>
                 <p className="font-mono text-xs text-smoke mb-3 uppercase tracking-wider text-center">Your Rating</p>
                 <ReelRatingPicker value={currentScore} onChange={handleScore} />
+              </div>
+
+              {/* Comments Section */}
+              <div className="border-t border-white/10 pt-4 mt-2">
+                <CommentsSection spaceId={spaceId} item={item} />
               </div>
 
               {/* Mobile Delete Button */}
