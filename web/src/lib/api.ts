@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? "/api" : "http://localhost:4000");
+const BASE = import.meta.env.PROD ? "/api" : (import.meta.env.VITE_API_URL || "http://localhost:4000");
 
 let _accessToken: string | null = null;
 
@@ -17,15 +17,19 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   const res = await fetch(`${BASE}${path}`, { ...options, headers, credentials: "include" });
 
-  // Auto-refresh on 401
-  if (res.status === 401 && path !== "/auth/refresh") {
+  // Auto-refresh on 401 (but not for auth endpoints)
+  const isAuthEndpoint = path === "/auth/refresh" || path === "/auth/login" || path === "/auth/register";
+  if (res.status === 401 && !isAuthEndpoint) {
     const refresh = await fetch(`${BASE}/auth/refresh`, { method: "POST", credentials: "include" });
     if (refresh.ok) {
       const data = await refresh.json();
       _accessToken = data.accessToken;
       headers["Authorization"] = `Bearer ${_accessToken}`;
       const retry = await fetch(`${BASE}${path}`, { ...options, headers, credentials: "include" });
-      if (!retry.ok) throw new Error(await retry.text());
+      if (!retry.ok) {
+        const body = await retry.json().catch(() => ({}));
+        throw new Error(body.error || "Request failed");
+      }
       return retry.json();
     } else {
       _accessToken = null;
