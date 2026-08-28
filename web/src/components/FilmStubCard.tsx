@@ -182,6 +182,11 @@ export function FilmStubCard({ item, spaceId, members, myRole, index }: FilmStub
               {mediaLabel[item.mediaType]}
             </span>
             <span className="font-mono text-[11px] text-smoke/60 uppercase">{item.originalLanguage}</span>
+            {item.addedBy && members.find(m => m.id === item.addedBy) && (
+              <span className="font-mono text-[11px] text-smoke/40 uppercase ml-1">
+                • Added by {members.find(m => m.id === item.addedBy)?.displayName.split(" ")[0]}
+              </span>
+            )}
           </div>
         </div>
 
