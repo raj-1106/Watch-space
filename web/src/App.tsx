@@ -4,6 +4,7 @@ import { useAuth } from "./context/AuthContext";
 import { LoginPage } from "./pages/LoginPage";
 import { SpaceListPage } from "./pages/SpaceListPage";
 import { SpaceDetailPage } from "./pages/SpaceDetailPage";
+import { UpdateBanner } from "./components/UpdateBanner";
 
 // Lazy-loaded routes
 const JoinPage = lazy(() => import("./pages/JoinPage").then((m) => ({ default: m.JoinPage })));
@@ -25,7 +26,9 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
 export function App() {
   return (
-    <Suspense fallback={<LoadingScreen />}>
+    <>
+      <UpdateBanner />
+      <Suspense fallback={<LoadingScreen />}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
 
@@ -59,6 +62,7 @@ export function App() {
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/spaces" replace />} />
       </Routes>
-    </Suspense>
+      </Suspense>
+    </>
   );
 }
