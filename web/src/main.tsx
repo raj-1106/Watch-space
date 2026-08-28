@@ -5,6 +5,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { App } from "./App";
 import { AuthProvider } from "./context/AuthContext";
 import "./index.css";
+import { registerSW } from "virtual:pwa-register";
+
+registerSW({
+  onNeedRefresh() {
+    console.log("New version available — refresh to update.");
+    // hook into a toast if you have one; otherwise this is fine as a silent auto-update
+  },
+});
 
 const queryClient = new QueryClient({
   defaultOptions: {
