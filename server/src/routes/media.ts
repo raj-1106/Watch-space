@@ -252,8 +252,8 @@ router.put("/spaces/:id/media/:mediaItemId/interaction", membershipMiddleware(),
     const userId = req.user!.uid;
     const { watched, score, reviewText } = req.body;
 
-    if (score !== undefined && (typeof score !== "number" || score < 1 || score > 10)) {
-      throw new AppError(400, "score must be a number between 1 and 10.");
+    if (score !== undefined && score !== null && (typeof score !== "number" || score < 1 || score > 10)) {
+      throw new AppError(400, "score must be a number between 1 and 10, or null to clear it.");
     }
 
     const now = new Date();
@@ -262,7 +262,7 @@ router.put("/spaces/:id/media/:mediaItemId/interaction", membershipMiddleware(),
       data.watched = watched;
       data.watchedAt = watched ? now : null;
     }
-    if (score !== undefined) data.score = score;
+    if (score !== undefined) data.score = score; // score === null clears the rating
     if (reviewText !== undefined) data.reviewText = reviewText;
 
     const interaction = await prisma.mediaInteraction.upsert({
