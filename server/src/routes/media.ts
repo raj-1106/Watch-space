@@ -125,6 +125,7 @@ async function getEnrichedMedia(spaceId: string, userId: string) {
         addedAt: sm.addedAt,
         remarks: sm.remarks,
         avgScore,
+        ratingCount: scores.length,
         tags: sm.tags.map(t => t.tag),
         myInteraction: myInteraction
           ? { watched: myInteraction.watched, score: myInteraction.score, watchedAt: myInteraction.watchedAt, reviewText: myInteraction.reviewText }
@@ -225,7 +226,7 @@ router.get("/spaces/:id/media/:mediaItemId", membershipMiddleware(), async (req:
     const scores = interactions.filter((i) => i.score !== null).map((i) => i.score as number);
     const avgScore = scores.length > 0 ? +(scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : null;
 
-    res.json({ ...mediaItem, avgScore, interactions });
+    res.json({ ...mediaItem, avgScore, ratingCount: scores.length, interactions });
   } catch (err) {
     next(err);
   }

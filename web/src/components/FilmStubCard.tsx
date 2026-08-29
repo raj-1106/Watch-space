@@ -210,6 +210,15 @@ export function FilmStubCard({ item, spaceId, members, myRole, index }: FilmStub
             <Star className="w-3 h-3 text-gold fill-gold flex-shrink-0" />
             <span className="font-mono text-xs text-gold font-medium">{item.avgScore.toFixed(1)}</span>
             <span className="font-mono text-[11px] text-smoke/50">/ 10</span>
+            {!!item.ratingCount && (
+              <span
+                title={`${item.ratingCount} ${item.ratingCount === 1 ? "rating" : "ratings"}`}
+                className="w-4 h-4 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center
+                  font-mono text-[9px] text-gold/90 ml-0.5"
+              >
+                {item.ratingCount}
+              </span>
+            )}
           </div>
         )}
 
@@ -322,6 +331,22 @@ export function FilmStubCard({ item, spaceId, members, myRole, index }: FilmStub
                   <div className="mt-2">
                     <TagRow spaceId={spaceId} mediaItemId={item.id} tags={item.tags || []} />
                   </div>
+                  {item.avgScore != null && (
+                    <div className="flex items-center gap-1.5 mt-2">
+                      <Star className="w-3.5 h-3.5 text-gold fill-gold flex-shrink-0" />
+                      <span className="font-mono text-sm text-gold font-medium">{item.avgScore.toFixed(1)}</span>
+                      <span className="font-mono text-xs text-smoke/50">/ 10</span>
+                      {!!item.ratingCount && (
+                        <span
+                          title={`${item.ratingCount} ${item.ratingCount === 1 ? "rating" : "ratings"}`}
+                          className="w-5 h-5 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center
+                            font-mono text-[10px] text-gold/90 ml-0.5"
+                        >
+                          {item.ratingCount}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <button onClick={() => setModalOpen(false)} className="p-2 text-smoke hover:text-cream bg-white/5 rounded-full shrink-0">
                   <X className="w-5 h-5" />

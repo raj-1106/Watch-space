@@ -46,6 +46,7 @@ export interface MediaItem {
   addedBy?: string;
   addedAt?: string;
   avgScore?: number | null;
+  ratingCount?: number;
   myInteraction?: {
     watched: boolean;
     score?: number | null;
