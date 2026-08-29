@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 
 /**
@@ -17,12 +18,18 @@ import { useRegisterSW } from "virtual:pwa-register/react";
  * correctly — reimplementing it by hand here would just be re-introducing
  * the bug this component exists to avoid.
  *
- * registerType is set to "prompt" (not "autoUpdate") in vite.config.ts
- * specifically so this banner gets a chance to show before the app swaps
- * code out from under whatever the user is mid-way through doing (e.g.
- * mid-rating a title).
+ * UPDATED: this now auto-applies the update the instant it's detected,
+ * rather than waiting for a manual "Refresh" click. That's a deliberate
+ * trade-off, not a default worth forgetting about: it means a new deploy
+ * can reload the page out from under someone mid-drag on the
+ * ReelRatingPicker, or mid-typing a comment once that feature ships. If
+ * that turns out to be annoying in practice, the fix is reverting to the
+ * button-click version, not patching around this one — auto-apply and
+ * "never interrupt the user" are genuinely in tension, not a bug to fix.
  */
 export function UpdateBanner() {
+  const [updating, setUpdating] = useState(false);
+
   const {
     needRefresh: [needRefresh],
     updateServiceWorker,
@@ -37,31 +44,25 @@ export function UpdateBanner() {
     },
   });
 
-  if (!needRefresh) return null;
+  useEffect(() => {
+    if (needRefresh) {
+      setUpdating(true);
+      updateServiceWorker(true); // skipWaiting + wait for controllerchange + reload, per the note above
+    }
+  }, [needRefresh, updateServiceWorker]);
 
+  if (!updating) return null;
+
+  // brief, non-interactive: there's nothing to click, the reload is already happening
   return (
     <div
       role="status"
       aria-live="polite"
-      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3
+      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2
         rounded-full bg-velvet border border-gold/30 px-4 py-2.5 shadow-lg shadow-black/40"
     >
-      <span className="font-mono text-xs text-cream">A new version is available</span>
-      <button
-        onClick={() => updateServiceWorker(true)}
-        className="rounded-full bg-gold px-3 py-1 text-xs font-medium text-midnight
-          transition-colors hover:bg-gold/90"
-      >
-        Refresh
-      </button>
-      {/*
-        No dismiss button, deliberately. Letting someone keep browsing on a
-        stale bundle indefinitely — after we JUST finished tracking down and
-        fixing an auth bug that depends on this exact codebase's current
-        logic — is a worse default than a mildly persistent prompt. If you
-        want a dismiss option later, it's a one-line addition, but it
-        shouldn't be silent.
-      */}
+      <span className="w-2 h-2 rounded-full bg-gold animate-pulse" />
+      <span className="font-mono text-xs text-cream">Updating…</span>
     </div>
   );
 }

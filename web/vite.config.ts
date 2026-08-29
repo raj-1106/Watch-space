@@ -35,8 +35,10 @@ export default defineConfig({
         // not a side effect of adding installability.
         globPatterns: ["**/*.{js,css,html,svg,woff2}"],
       },
-      registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "apple-touch-icon.png"],
+      registerType: "prompt", // We drive updates ourselves via useRegisterSW in UpdateBanner.tsx,
+      // which now auto-applies updates instantly rather than waiting for a click —
+      // see the comment at the top of that file for the trade-off this means.
+      includeAssets: ["favicon.svg", "icons.svg"],
       manifest: {
         name: "Sofa Syndicate",
         short_name: "Sofa Syndicate",
