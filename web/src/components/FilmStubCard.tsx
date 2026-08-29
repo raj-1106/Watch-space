@@ -261,24 +261,40 @@ export function FilmStubCard({ item, spaceId, members, myRole, index }: FilmStub
           </button>
 
           {/* Rating pills 1–10 */}
-          <div className="flex items-center gap-0.5 flex-1 overflow-x-auto hide-scrollbar">
+          <div className="flex items-end gap-0.5 flex-1 overflow-x-auto hide-scrollbar pt-4">
             {[1,2,3,4,5,6,7,8,9,10].map((n) => {
               const active = hoverRating != null ? n <= hoverRating : n <= currentScore;
+              const raters = item.memberInteractions?.filter((mi) => mi.score === n) ?? [];
               return (
-                <button
-                  key={n}
-                  onMouseEnter={() => setHoverRating(n)}
-                  onMouseLeave={() => setHoverRating(null)}
-                  onClick={() => handleScore(n)}
-                  className={`flex-1 min-w-[18px] h-8 sm:h-9 rounded text-[10px] font-mono font-medium
-                    transition-all duration-75 outline-none focus-visible:ring-1 focus-visible:ring-gold active:scale-95
-                    ${active
-                      ? "bg-gold text-midnight"
-                      : "bg-white/5 text-smoke/50 hover:bg-gold/20 hover:text-gold"
-                    }`}
-                >
-                  {n}
-                </button>
+                <div key={n} className="relative flex-1 min-w-[18px]">
+                  {raters.length > 0 && (
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 flex -space-x-1.5 z-10">
+                      {raters.map((mi) => (
+                        <div
+                          key={mi.userId}
+                          title={`${mi.displayName} rated ${n}/10`}
+                          className="w-3.5 h-3.5 rounded-full bg-gold text-midnight ring-1 ring-velvet
+                            flex items-center justify-center text-[7px] font-mono font-bold"
+                        >
+                          {getInitials(mi.displayName)}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <button
+                    onMouseEnter={() => setHoverRating(n)}
+                    onMouseLeave={() => setHoverRating(null)}
+                    onClick={() => handleScore(n)}
+                    className={`w-full h-8 sm:h-9 rounded text-[10px] font-mono font-medium
+                      transition-all duration-75 outline-none focus-visible:ring-1 focus-visible:ring-gold active:scale-95
+                      ${active
+                        ? "bg-gold text-midnight"
+                        : "bg-white/5 text-smoke/50 hover:bg-gold/20 hover:text-gold"
+                      }`}
+                  >
+                    {n}
+                  </button>
+                </div>
               );
             })}
           </div>
