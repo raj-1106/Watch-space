@@ -7,6 +7,7 @@ import { Star, Trash2, X, MessageSquare } from "lucide-react";
 import { ReelRatingPicker } from "./ReelRatingPicker";
 import { TagRow } from "./TagRow";
 import { CommentsSection } from "./CommentsSection";
+import { useAuth } from "../context/AuthContext";
 
 interface FilmStubCardProps {
   item: MediaItem;
@@ -24,6 +25,7 @@ const mediaLabel: Record<string, string> = { MOVIE: "FILM", SERIES: "SERIES", AN
 export function FilmStubCard({ item, spaceId, members, myRole, index }: FilmStubCardProps) {
   const reducedMotion = useReducedMotion();
   const qc = useQueryClient();
+  const { user } = useAuth();
   const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -47,11 +49,40 @@ export function FilmStubCard({ item, spaceId, members, myRole, index }: FilmStub
       const previousEntries = qc.getQueriesData<MediaItem[]>({ queryKey: ["space-media", spaceId], exact: false });
 
       qc.setQueriesData<MediaItem[]>({ queryKey: ["space-media", spaceId], exact: false }, (old) =>
-        old?.map((m) =>
-          m.id === item.id
-            ? { ...m, myInteraction: { ...m.myInteraction, watched: m.myInteraction?.watched ?? false, ...data } }
-            : m
-        )
+        old?.map((m) => {
+          if (m.id !== item.id) return m;
+
+          const nextMyInteraction = { ...m.myInteraction, watched: m.myInteraction?.watched ?? false, ...data };
+
+          // Every other visible display — the rater badges above each pill, the mobile
+          // member-breakdown list, and the avg-rating star + count — reads from
+          // memberInteractions/avgScore/ratingCount, NOT myInteraction. Patching only
+          // myInteraction (as this used to do) meant your own checkmark flipped instantly
+          // but your entry in every one of those secondary displays kept showing the OLD
+          // state until the network round trip finished — most visible exactly when
+          // *removing* a watched mark or a rating, since that's when the stale gold
+          // badge/dot lingering is actually noticeable.
+          const nextMemberInteractions = user
+            ? (m.memberInteractions ?? []).map((mi) =>
+                mi.userId === user.id
+                  ? { ...mi, watched: nextMyInteraction.watched, score: nextMyInteraction.score ?? null }
+                  : mi
+              )
+            : m.memberInteractions;
+
+          const scores = (nextMemberInteractions ?? [])
+            .map((mi) => mi.score)
+            .filter((s): s is number => s != null);
+          const nextAvgScore = scores.length > 0 ? +(scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : null;
+
+          return {
+            ...m,
+            myInteraction: nextMyInteraction,
+            memberInteractions: nextMemberInteractions,
+            avgScore: nextAvgScore,
+            ratingCount: scores.length,
+          };
+        })
       );
 
       return { previousEntries };
