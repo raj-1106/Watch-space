@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import authRouter from "./routes/auth";
 import spacesRouter from "./routes/spaces";
 import mediaRouter from "./routes/media";
+import feedbackRouter from "./routes/feedback";
 import { errorHandler } from "./middleware/errorHandler";
 
 // Load env before anything else
@@ -26,6 +27,7 @@ app.get("/health", (_req, res) => res.json({ status: "ok", env: process.env.NODE
 app.use("/auth", authRouter);
 app.use("/spaces", spacesRouter);
 app.use("/", mediaRouter);
+app.use("/feedback", feedbackRouter);
 
 // ─── Central Error Handler (must be last) ─────────────────────────────────────
 app.use(errorHandler);

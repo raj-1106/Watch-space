@@ -21,6 +21,23 @@ model User {
   memberships   SpaceMembership[]
   interactions  MediaInteraction[]
   comments      Comment[]
+  feedback      Feedback[]
+}
+
+enum FeedbackType {
+  BUG
+  SUGGESTION
+}
+
+model Feedback {
+  id        String       @id @default(cuid())
+  userId    String
+  type      FeedbackType
+  message   String
+  pageUrl   String? // which page they were on when they submitted, for bug reports
+  createdAt DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model OAuthAccount {

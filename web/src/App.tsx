@@ -5,6 +5,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { SpaceListPage } from "./pages/SpaceListPage";
 import { SpaceDetailPage } from "./pages/SpaceDetailPage";
 import { UpdateBanner } from "./components/UpdateBanner";
+import { FeedbackButton } from "./components/FeedbackButton";
 
 // Lazy-loaded routes
 const JoinPage = lazy(() => import("./pages/JoinPage").then((m) => ({ default: m.JoinPage })));
@@ -21,7 +22,12 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <FeedbackButton />
+    </>
+  );
 }
 
 export function App() {
